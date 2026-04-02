@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
-//  MGD Vault — App Controller  v2.1
-//  Flyout item → filtre → liste/arama/ayarlar tam bağlı
+//  MGD Vault — App Controller  v2.2
+//  PWA install butonu + biyometrik session fix
 // ══════════════════════════════════════════════════════════════════
 
 // ── Utilities ────────────────────────────────────────────────────
@@ -12,6 +12,32 @@ function toast(msg,dur){
   window._tT=setTimeout(function(){t.classList.remove('show');},dur||2400);
 }
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── PWA Install ───────────────────────────────────────────────────
+var _installPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  _installPrompt=e;
+  // Butonu göster — hem dial açıkken hem lock ekranında
+  document.querySelectorAll('#btnInstall').forEach(function(b){b.style.display='flex';});
+});
+window.addEventListener('appinstalled',function(){
+  _installPrompt=null;
+  document.querySelectorAll('#btnInstall').forEach(function(b){b.style.display='none';});
+  toast('MGD Vault ana ekrana eklendi ✓');
+});
+function triggerInstall(){
+  if(!_installPrompt){
+    // iOS Safari — manual prompt (otomatik desteklemiyor)
+    toast('Tarayıcı menüsü → "Ana Ekrana Ekle" seçin 📲');
+    return;
+  }
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(function(r){
+    if(r.outcome==='accepted') toast('Kuruluyor… ✓');
+    _installPrompt=null;
+  });
+}
 
 // ── Flyout Item → Filter mapping ─────────────────────────────────
 // Her flyout item için {title, filter(note,decTitle,decBody)} tanımı
@@ -136,8 +162,16 @@ function buildUnlockForm(){
     if(!p){toast('Parola girin');return;}
     this.textContent='Açılıyor…';this.disabled=true;
     var ok=await VaultCrypto.unlock(p);
-    if(ok){sessionStorage.setItem('mgd_sk',p);document.getElementById('fPass').value='';initDial();}
-    else{toast('Yanlış parola');this.textContent='Aç';this.disabled=false;}
+    if(ok){
+      // Biyometrik için parolayı kaydet
+      try{ sessionStorage.setItem('mgd_sk', p); }catch(e){}
+      document.getElementById('fPass').value='';
+      initDial();
+    } else {
+      toast('Yanlış parola');
+      this.textContent='Aç';
+      this.disabled=false;
+    }
   });
 
   var lf=document.getElementById('lockFooter');
@@ -156,10 +190,25 @@ async function doBio(){
     btn.classList.remove('scanning');
     if(ok){
       var cached=sessionStorage.getItem('mgd_sk');
-      if(cached){var ok2=await VaultCrypto.unlock(cached);if(ok2){initDial();return;}}
-      toast('Parolayı bir kez girin');
+      if(cached){
+        var ok2=await VaultCrypto.unlock(cached);
+        if(ok2){ initDial(); return; }
+      }
+      // Session süresi dolmuşsa parolayı iste
+      toast('Oturum süresi doldu, parolayı girin');
+    } else {
+      toast('Biyometrik doğrulanamadı');
     }
-  }catch(e){btn.classList.remove('scanning');toast('Biyometrik: '+e.message);}
+  }catch(e){
+    btn.classList.remove('scanning');
+    // WebAuthn hatası — session'dan dene
+    var cached=sessionStorage.getItem('mgd_sk');
+    if(cached){
+      var ok3=await VaultCrypto.unlock(cached);
+      if(ok3){ initDial(); return; }
+    }
+    toast('Biyometrik: '+e.message);
+  }
 }
 
 // ── Dial Screen ──────────────────────────────────────────────────
@@ -204,6 +253,10 @@ function initDial(){
   });
   document.getElementById('btnDialSettings').addEventListener('click',function(){Router.go('pgSettings');});
   document.getElementById('btnDialLock').addEventListener('click',doLock);
+
+  // Install butonu
+  var btnInst=document.getElementById('btnInstall');
+  if(btnInst) btnInst.addEventListener('click',triggerInstall);
 }
 
 // ── Note List ─────────────────────────────────────────────────────
