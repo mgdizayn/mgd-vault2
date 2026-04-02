@@ -156,16 +156,21 @@ function buildUnlockForm(){
     '<input class="input" type="password" id="fPass" placeholder="Master parola" autocomplete="current-password">'+
     '<button class="btn btn-dark" id="btnUnlock" style="width:100%;height:48px;margin-top:8px;border-radius:14px;font-size:0.9rem;">Aç</button>';
 
-  document.getElementById('fPass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('btnUnlock').click();});
+  document.getElementById('fPass').addEventListener('keydown',function(e){
+    if(e.key==='Enter') document.getElementById('btnUnlock').click();
+  });
+
   document.getElementById('btnUnlock').addEventListener('click',async function(){
     var p=document.getElementById('fPass').value;
     if(!p){toast('Parola girin');return;}
     this.textContent='Açılıyor…';this.disabled=true;
     var ok=await VaultCrypto.unlock(p);
     if(ok){
-      // Biyometrik için parolayı kaydet
-      try{ sessionStorage.setItem('mgd_sk', p); }catch(e){}
       document.getElementById('fPass').value='';
+      // Biyometrik kayıtlıysa parolayı şifreli sakla
+      if(VaultAuth.supported()&&VaultAuth.hasCred()){
+        await VaultCrypto.savePassForBio(p);
+      }
       initDial();
     } else {
       toast('Yanlış parola');
@@ -178,36 +183,41 @@ function buildUnlockForm(){
   lf.style.display='block';
   lf.textContent='';
 
-  if(hasBio) setTimeout(doBio,600);
+  // Biyometrik varsa otomatik dene
+  if(hasBio) setTimeout(doBio,500);
 }
 
 async function doBio(){
   var btn=document.getElementById('btnBio');
-  if(!btn)return;
+  if(!btn) return;
   btn.classList.add('scanning');
   try{
+    // 1. WebAuthn ile kimliği doğrula
     var ok=await VaultAuth.authenticate();
+    if(!ok){ btn.classList.remove('scanning'); toast('Biyometrik doğrulanamadı'); return; }
+
+    // 2. localStorage'dan şifreli parolayı çöz
+    var pass=await VaultCrypto.loadPassForBio();
+    if(!pass){
+      btn.classList.remove('scanning');
+      toast('Parolayı bir kez elle girin');
+      return;
+    }
+
+    // 3. Vault'u aç
+    var ok2=await VaultCrypto.unlock(pass);
     btn.classList.remove('scanning');
-    if(ok){
-      var cached=sessionStorage.getItem('mgd_sk');
-      if(cached){
-        var ok2=await VaultCrypto.unlock(cached);
-        if(ok2){ initDial(); return; }
-      }
-      // Session süresi dolmuşsa parolayı iste
-      toast('Oturum süresi doldu, parolayı girin');
+    if(ok2){
+      initDial();
     } else {
-      toast('Biyometrik doğrulanamadı');
+      // Kayıtlı parola geçersiz — temizle
+      VaultCrypto.clearPassForBio();
+      toast('Parola değişmiş, tekrar girin');
     }
   }catch(e){
     btn.classList.remove('scanning');
-    // WebAuthn hatası — session'dan dene
-    var cached=sessionStorage.getItem('mgd_sk');
-    if(cached){
-      var ok3=await VaultCrypto.unlock(cached);
-      if(ok3){ initDial(); return; }
-    }
-    toast('Biyometrik: '+e.message);
+    // WebAuthn iptal / hata — sessizce şifre ekranına bırak
+    console.warn('Bio error:',e.message);
   }
 }
 
@@ -398,9 +408,12 @@ function initSettings(){
 
 // ── Lock ──────────────────────────────────────────────────────────
 function doLock(){
-  VaultCrypto.lock();sessionStorage.removeItem('mgd_sk');
+  VaultCrypto.lock();
+  sessionStorage.removeItem('mgd_sk');
   _dialInited=false;
-  Router.go('pgLock');buildUnlockForm();toast('Kilitlendi 🔒');
+  Router.go('pgLock');
+  buildUnlockForm();
+  toast('Kilitlendi 🔒');
 }
 
 // ── DOMContentLoaded ─────────────────────────────────────────────

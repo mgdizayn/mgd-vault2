@@ -38,7 +38,59 @@ var VaultCrypto=(function(){
   function lock(){_k=null;}
   function isSetup(){return!!localStorage.getItem('mgd_salt');}
   function isUnlocked(){return!!_k;}
-  return{setup,unlock,encryptText,decryptText,lock,isSetup,isUnlocked};
+
+  // ── Biyometrik için parolayı şifreli localStorage'a kaydet ──────
+  // Sabit bir "device key" türetiriz — cihaza özgü sabit değerlerden.
+  // WebAuthn doğrulandıktan sonra bu key ile parolayı açarız.
+  async function _deviceKey(){
+    // Cihaza özgü sabit materyal: salt + hostname + user agent hash
+    var raw = (localStorage.getItem('mgd_dksalt')||'');
+    if(!raw){
+      var s=rnd(16); raw=ab2b64(s.buffer);
+      localStorage.setItem('mgd_dksalt',raw);
+    }
+    var material = raw + window.location.hostname;
+    var km = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(material), 'PBKDF2', false, ['deriveKey']
+    );
+    var saltBytes = new TextEncoder().encode('mgd_device_v1');
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt:saltBytes, iterations:10000, hash:'SHA-256'},
+      km, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+    );
+  }
+
+  async function savePassForBio(pass){
+    try{
+      var dk  = await _deviceKey();
+      var iv  = rnd(12);
+      var enc = await crypto.subtle.encrypt(
+        {name:'AES-GCM', iv}, dk, new TextEncoder().encode(pass)
+      );
+      localStorage.setItem('mgd_bpass', JSON.stringify({
+        iv: ab2b64(iv.buffer), ct: ab2b64(enc)
+      }));
+      return true;
+    }catch(e){ return false; }
+  }
+
+  async function loadPassForBio(){
+    try{
+      var stored = localStorage.getItem('mgd_bpass');
+      if(!stored) return null;
+      var v   = JSON.parse(stored);
+      var dk  = await _deviceKey();
+      var dec = await crypto.subtle.decrypt(
+        {name:'AES-GCM', iv:new Uint8Array(b642ab(v.iv))}, dk, b642ab(v.ct)
+      );
+      return new TextDecoder().decode(dec);
+    }catch(e){ return null; }
+  }
+
+  function clearPassForBio(){ localStorage.removeItem('mgd_bpass'); }
+
+  return{setup,unlock,encryptText,decryptText,lock,isSetup,isUnlocked,
+         savePassForBio,loadPassForBio,clearPassForBio};
 })();
 
 // ── WebAuthn ──────────────────────────────────────────────────────
