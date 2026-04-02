@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#16161a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MGD Vault">
+<title>MGD Vault</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/vars.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/lock.css">
+<link rel="stylesheet" href="css/dial.css">
+<link rel="stylesheet" href="css/screens.css">
+</head>
+<body>
+<canvas id="noise"></canvas>
+<div id="app">
+
+<!-- PAGE WRAP — horizontal slider -->
+<div class="page-wrap" id="pageWrap">
+
+<!-- ══════════════════════════════════
+     PAGE 0 — LOCK / SETUP
+══════════════════════════════════ -->
+<div class="page" id="pgLock">
+  <div class="lock-logo as">
+    <div class="lock-logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="11" width="18" height="11" rx="2.5" stroke="rgba(255,255,255,0.65)" stroke-width="1.7"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="rgba(255,255,255,0.65)" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="12" cy="16.5" r="1.5" fill="#e8893b"/>
+      </svg>
+    </div>
+    <div class="lock-title">MGD Vault</div>
+    <div class="lock-sub" id="lockSub">Kişisel şifreli not defteri.<br>Kimse göremez, sadece sen.</div>
+  </div>
+
+  <!-- Biometric button -->
+  <div class="biometric-ring" id="bioRingWrap" style="display:none;">
+    <button class="bio-btn" id="btnBio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+        <path d="M12 2C8.5 2 6 4.5 6 8v1"/>
+        <path d="M18 9c0-3.3-2.7-6-6-6"/>
+        <path d="M9 12c0-1.7 1.3-3 3-3s3 1.3 3 3v2"/>
+        <path d="M7 14c0-2.8 2.2-5 5-5"/>
+        <path d="M12 17v-2"/>
+        <path d="M15 16.5c0 1.4-.6 2.7-1.5 3.5"/>
+        <path d="M9 19c-.6-.9-1-2-1-3.2V14"/>
+        <path d="M17 12c0 3-1.3 5.6-3.3 7.3"/>
+      </svg>
+    </button>
+    <div class="bio-pulse" id="bioPulse"></div>
+  </div>
+
+  <div class="lock-divider" id="lockDivider" style="display:none;">ya da</div>
+
+  <!-- Forms -->
+  <div class="lock-form" id="lockForm">
+    <!-- Filled by JS: setup form or unlock form -->
+  </div>
+
+  <div class="lock-footer" id="lockFooter"></div>
+</div><!-- /pgLock -->
+
+
+<!-- ══════════════════════════════════
+     PAGE 1 — DIAL
+══════════════════════════════════ -->
+<div class="page" id="pgDial">
+
+  <div class="dial-top">
+    <div>
+      <div class="dial-greeting" id="dialGreet">İyi günler</div>
+      <div class="dial-date"    id="dialDate"></div>
+    </div>
+    <div class="dial-top-right">
+      <button class="icon-btn" id="btnDialSearch" title="Ara">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn" id="btnDialSettings" title="Ayarlar">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button class="icon-btn" id="btnDialLock" title="Kilitle">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="dial-stage" id="dialStage">
+
+    <!-- Bezier connector lines -->
+    <svg class="conn-svg" id="connSvg"></svg>
+
+    <!-- Dial -->
+    <div class="dial-wrap" id="dialWrap">
+      <svg class="seg-svg" id="segSvg" viewBox="0 0 300 300">
+        <defs>
+          <filter id="fo" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g id="gSegs"></g>
+        <g id="gGlow"></g>
+        <g id="gIcons"></g>
+      </svg>
+      <div class="knob-outer">
+        <div class="knob-mid" id="knobBtn">
+          <div class="knob-face">
+            <svg viewBox="0 0 24 24" fill="none">
+              <line x1="6" y1="9"  x2="18" y2="9"  stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="6" y1="12" x2="18" y2="12" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="6" y1="15" x2="18" y2="15" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flyout items panel -->
+    <div class="flyout-panel" id="flyoutPanel">
+      <div class="flyout-list" id="flyoutList"></div>
+    </div>
+
+    <!-- Active segment pill -->
+    <div class="dial-seg-pill" id="dialSegPill">Notlar</div>
+
+  </div>
+
+  <div class="seg-dots" id="segDots"></div>
+
+  <div class="dial-bottom">
+    <button class="btn btn-dark" id="btnOpenList">
+      <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;">
+        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+      Notları Aç
+    </button>
+    <button class="btn btn-amber" id="btnNewNote">
+      <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Yeni Not
+    </button>
+  </div>
+
+</div><!-- /pgDial -->
+
+
+<!-- ══════════════════════════════════
+     PAGE 2 — NOTE LIST
+══════════════════════════════════ -->
+<div class="page" id="pgList">
+  <div class="top-bar">
+    <button class="icon-btn" id="btnListBack">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="top-bar-title" id="listTitle">Notlar</div>
+    <button class="icon-btn" id="btnListAdd">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+  <div class="list-search-row">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="input list-search" id="listSearch" placeholder="Ara..." type="search">
+  </div>
+  <div class="note-scroll" id="noteScroll">
+    <div id="noteList"></div>
+  </div>
+  <button class="fab" id="fabNew">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div><!-- /pgList -->
+
+
+<!-- ══════════════════════════════════
+     PAGE 3 — NOTE READER
+══════════════════════════════════ -->
+<div class="page" id="pgReader">
+  <div class="reader-top">
+    <button class="icon-btn" id="btnReaderBack">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="reader-top-actions">
+      <button class="icon-btn" id="btnReaderEdit" title="Düzenle">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="icon-btn" id="btnReaderPin" title="Sabitle">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </button>
+      <button class="icon-btn" id="btnReaderDelete" title="Sil" style="color:var(--red);">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="reader-scroll" id="readerScroll">
+    <div class="reader-title"  id="readerTitle"></div>
+    <div class="reader-meta">
+      <span id="readerDate"></span>
+      <span class="reader-meta-sep"></span>
+      <span id="readerCat"></span>
+      <span class="reader-meta-sep"></span>
+      <span id="readerWords"></span>
+    </div>
+    <div class="reader-body" id="readerBody"></div>
+  </div>
+</div><!-- /pgReader -->
+
+
+<!-- ══════════════════════════════════
+     PAGE 4 — EDITOR
+══════════════════════════════════ -->
+<div class="page" id="pgEditor">
+  <div class="editor-top">
+    <button class="icon-btn" id="btnEditorBack">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="editor-top-right">
+      <div class="enc-badge">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        AES-256
+      </div>
+      <div class="save-badge" id="saveBadge">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Kaydedildi
+      </div>
+      <button class="btn btn-dark" id="btnEditorSave" style="padding:8px 16px;height:36px;font-size:0.8rem;border-radius:10px;">Kaydet</button>
+    </div>
+  </div>
+
+  <div class="editor-toolbar" id="editorToolbar">
+    <button class="tb-btn" data-cmd="b" title="Kalın"><b>B</b></button>
+    <button class="tb-btn" data-cmd="i" title="İtalik"><i>I</i></button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" data-cmd="h1">H1</button>
+    <button class="tb-btn" data-cmd="h2">H2</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" data-cmd="ul">≡</button>
+    <button class="tb-btn" data-cmd="todo">☐</button>
+    <button class="tb-btn" data-cmd="quote">❝</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" data-cmd="pin" id="tbPin" style="margin-left:auto;">📌</button>
+    <button class="tb-btn" data-cmd="del" style="color:var(--red);">🗑</button>
+  </div>
+
+  <textarea class="editor-title" id="editorTitle" placeholder="Başlık..." rows="1" maxlength="140"></textarea>
+
+  <div class="editor-body">
+    <textarea class="editor-textarea" id="editorBody" placeholder="Yazmaya başla...
+
+**kalın**, _italik_, # Başlık
+- liste öğesi
+[ ] yapılacak görev
+> alıntı"></textarea>
+  </div>
+
+  <div class="editor-footer">
+    <div class="editor-meta">
+      <span id="editorWC">0 kelime</span>
+      <span id="editorStatus">•</span>
+    </div>
+  </div>
+</div><!-- /pgEditor -->
+
+
+<!-- ══════════════════════════════════
+     PAGE 5 — SETTINGS
+══════════════════════════════════ -->
+<div class="page" id="pgSettings">
+  <div class="top-bar">
+    <button class="icon-btn" id="btnSettingsBack">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="top-bar-title">Ayarlar</div>
+    <div style="width:38px;"></div>
+  </div>
+  <div class="settings-scroll">
+
+    <div class="settings-section">
+      <div class="settings-section-label">Güvenlik</div>
+
+      <div class="s-item" id="sBio">
+        <div class="s-icon" style="background:var(--amber-soft);color:var(--amber);">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.5 2 6 4.5 6 8v1M18 9c0-3.3-2.7-6-6-6M9 12c0-1.7 1.3-3 3-3s3 1.3 3 3v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="s-info">
+          <div class="s-name">Biyometrik Giriş</div>
+          <div class="s-desc">Parmak izi / Yüz tanıma</div>
+        </div>
+        <div class="toggle-wrap">
+          <div class="toggle on" id="toggleBio"><div class="toggle-dot"></div></div>
+        </div>
+      </div>
+
+      <div class="s-item" id="sChangePass">
+        <div class="s-icon" style="background:rgba(255,255,255,0.05);color:var(--t-mid);">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="s-info">
+          <div class="s-name">Parola Değiştir</div>
+          <div class="s-desc">Master parolayı güncelle</div>
+        </div>
+        <div class="s-chev">›</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">GitHub Sync</div>
+      <div class="s-item" id="sGithub">
+        <div class="s-icon" style="background:var(--blue-soft);color:var(--blue);">
+          <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="s-info">
+          <div class="s-name">GitHub Bağlantısı</div>
+          <div class="s-desc" id="ghDesc">Bağlı değil</div>
+        </div>
+        <div class="s-chev" id="ghChev">›</div>
+      </div>
+      <div class="gh-config" id="ghConfig" style="display:none;">
+        <div class="gh-status"><div class="s-dot gray" id="ghDot"></div><span id="ghStatusTxt">Bağlantı yok</span></div>
+        <input class="input" id="ghToken" type="password" placeholder="GitHub Personal Access Token">
+        <input class="input" id="ghRepo"  placeholder="kullanici/repo-adi">
+        <button class="btn btn-dark" id="btnGhConnect" style="height:40px;font-size:0.8rem;">Bağlan &amp; Test Et</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Veri</div>
+      <div class="s-item" id="sExport">
+        <div class="s-icon" style="background:var(--green-soft);color:var(--green);">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="s-info"><div class="s-name">Notları Dışa Aktar</div><div class="s-desc">JSON olarak indir</div></div>
+        <div class="s-chev">›</div>
+      </div>
+      <div class="s-item" id="sReset">
+        <div class="s-icon" style="background:var(--red-soft);color:var(--red);">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="s-info"><div class="s-name" style="color:var(--red);">Vault'u Sıfırla</div><div class="s-desc">Tüm veriler silinir</div></div>
+        <div class="s-chev" style="color:var(--red);">›</div>
+      </div>
+    </div>
+
+    <div class="ver-note">MGD Vault v2.0 · AES-256-GCM · WebAuthn · IndexedDB<br>Tüm veriler cihazınızda şifrelenir</div>
+  </div>
+</div><!-- /pgSettings -->
+
+</div><!-- /pageWrap -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script src="js/noise.js"></script>
+<script src="js/crypto.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/github.js"></script>
+<script src="js/router.js"></script>
+<script src="js/dial.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

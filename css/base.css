@@ -1,0 +1,109 @@
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;-webkit-text-size-adjust:100%;}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--t-hi);
+  height:100%;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overscroll-behavior:none;
+  user-select:none;
+}
+input,textarea{font-family:var(--font);user-select:text;-webkit-user-select:text;}
+button{font-family:var(--font);cursor:pointer;border:none;background:none;}
+::-webkit-scrollbar{width:2px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:2px;}
+
+/* ── App Shell ── */
+#app{
+  position:fixed;inset:0;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(36,36,50,0.95) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 85% 20%, rgba(26,26,38,0.8) 0%, transparent 60%),
+    var(--bg);
+}
+
+/* ── Page system — horizontal slide ── */
+.page-wrap{
+  position:absolute;inset:0;
+  display:flex;
+  transition:transform 0.38s var(--spring);
+  will-change:transform;
+}
+.page{
+  width:100vw;height:100%;
+  flex-shrink:0;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── Noise canvas ── */
+#noise{
+  position:fixed;inset:0;pointer-events:none;
+  opacity:0.03;z-index:9999;
+}
+
+/* ── Shared UI ── */
+.top-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 12px;
+  flex-shrink:0;
+}
+.top-bar-title{font-size:1rem;font-weight:700;letter-spacing:-0.2px;}
+
+.icon-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--bg-3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--t-mid);transition:all 0.18s;flex-shrink:0;
+}
+.icon-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.icon-btn:active{transform:scale(0.9);background:var(--bg-4);}
+.icon-btn:hover{color:var(--t-hi);border-color:var(--border-md);}
+
+.btn{
+  border-radius:var(--r-md);padding:12px 20px;
+  font-size:0.86rem;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all 0.18s;border:1px solid transparent;
+}
+.btn:active{transform:scale(0.97);}
+.btn-dark{background:var(--bg-4);border-color:var(--border-md);color:var(--t-hi);}
+.btn-dark:hover{background:var(--bg-5);border-color:var(--border-hi);}
+.btn-amber{background:var(--amber-soft);border-color:rgba(232,137,59,0.3);color:var(--amber);}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--t-mid);}
+.btn-ghost:hover{color:var(--t-hi);border-color:var(--border-md);}
+.btn-danger{background:var(--red-soft);border-color:rgba(248,113,113,0.25);color:var(--red);}
+
+.input{
+  width:100%;background:var(--bg-3);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:12px 14px;
+  color:var(--t-hi);font-size:0.88rem;outline:none;
+  transition:border-color 0.2s;
+}
+.input:focus{border-color:var(--border-hi);}
+.input::placeholder{color:var(--t-lo);}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:calc(env(safe-area-inset-bottom,0px)+80px);
+  left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--bg-4);border:1px solid var(--border-md);
+  border-radius:30px;padding:10px 20px;
+  font-size:0.8rem;font-weight:500;color:var(--t-hi);
+  box-shadow:0 8px 24px rgba(0,0,0,0.45);
+  opacity:0;transition:all 0.3s var(--spring);
+  pointer-events:none;z-index:10000;white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.45}}
+.au{animation:fadeUp 0.4s var(--spring) both;}
+.as{animation:scaleIn 0.35s var(--spring) both;}

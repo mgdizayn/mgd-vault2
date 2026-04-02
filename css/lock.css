@@ -1,0 +1,66 @@
+/* ════════════════════════════════════
+   LOCK / SETUP SCREEN  (page-0)
+════════════════════════════════════ */
+#pgLock{
+  align-items:center;justify-content:center;
+  padding:32px 28px;
+  padding-top:calc(env(safe-area-inset-top,0px)+32px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px)+32px);
+}
+
+.lock-logo{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  margin-bottom:40px;
+}
+.lock-logo-mark{
+  width:72px;height:72px;border-radius:22px;
+  background:linear-gradient(145deg,var(--bg-3),var(--bg-2));
+  border:1px solid var(--border-md);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.04),0 12px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.lock-logo-mark svg{width:30px;height:30px;}
+.lock-title{font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;}
+.lock-sub{font-size:0.8rem;color:var(--t-mid);text-align:center;line-height:1.6;max-width:260px;}
+
+.biometric-ring{
+  position:relative;width:90px;height:90px;margin:0 auto 8px;
+}
+.bio-btn{
+  width:90px;height:90px;border-radius:50%;
+  background:linear-gradient(145deg,var(--bg-3),var(--bg-2));
+  border:1px solid var(--border-md);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--t-mid);transition:all 0.22s;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.04),0 12px 36px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.bio-btn svg{width:36px;height:36px;}
+.bio-btn:active{transform:scale(0.93);}
+.bio-btn.scanning{animation:pulse 1s ease infinite;border-color:var(--amber-soft);color:var(--amber);}
+.bio-pulse{
+  position:absolute;inset:-6px;border-radius:50%;
+  border:1.5px solid var(--amber-glow);
+  opacity:0;transition:opacity 0.3s;pointer-events:none;
+}
+.bio-btn.scanning ~ .bio-pulse{opacity:1;animation:pulse 1s ease infinite;}
+
+.lock-divider{
+  display:flex;align-items:center;gap:12px;
+  color:var(--t-lo);font-size:0.7rem;width:100%;margin:4px 0;
+}
+.lock-divider::before,.lock-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.lock-form{display:flex;flex-direction:column;gap:10px;width:100%;}
+
+.setup-warning{
+  background:rgba(232,137,59,0.08);border:1px solid rgba(232,137,59,0.2);
+  border-radius:var(--r-sm);padding:11px 14px;
+  font-size:0.72rem;color:rgba(232,137,59,0.85);line-height:1.6;
+}
+
+.lock-footer{
+  margin-top:8px;text-align:center;
+  font-size:0.75rem;color:var(--t-mid);cursor:pointer;
+  transition:color 0.18s;
+}
+.lock-footer:hover{color:var(--t-hi);}
