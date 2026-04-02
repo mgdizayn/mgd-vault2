@@ -143,11 +143,50 @@ var VaultStorage=(function(){
       r.onerror=function(e){rej(e.target.error);};
     });
   }
-  async function tx(mode,fn){var d=await open();return new Promise(function(res,rej){var t=d.transaction('notes',mode),s=t.objectStore('notes'),r=fn(s);if(r)r.onsuccess=function(){res(r.result);};t.oncomplete=function(){res(r?r.result:true);};t.onerror=function(e){rej(e.target.error);};}); }
-  async function saveNote(n){return tx('readwrite',function(s){return s.put(n);});}
-  async function getAllNotes(){return tx('readonly',function(s){return s.getAll();}).then(function(r){return r||[];});}
-  async function deleteNote(id){return tx('readwrite',function(s){return s.delete(id);});}
-  async function clearAll(){return tx('readwrite',function(s){return s.clear();});}
+  // saveNote: transaction tamamlanana kadar bekle (oncomplete = gerçek başarı)
+  async function saveNote(n){
+    var d=await open();
+    return new Promise(function(res,rej){
+      var t=d.transaction('notes','readwrite');
+      t.oncomplete=function(){res(true);};
+      t.onerror=function(e){rej(e.target.error);};
+      t.onabort=function(e){rej(new Error('Transaction aborted'));};
+      t.objectStore('notes').put(n);
+    });
+  }
+
+  // getAllNotes: request.onsuccess ile veriyi al
+  async function getAllNotes(){
+    var d=await open();
+    return new Promise(function(res,rej){
+      var t=d.transaction('notes','readonly');
+      var r=t.objectStore('notes').getAll();
+      r.onsuccess=function(){res(r.result||[]);};
+      r.onerror=function(e){rej(e.target.error);};
+    });
+  }
+
+  // deleteNote: transaction oncomplete bekle
+  async function deleteNote(id){
+    var d=await open();
+    return new Promise(function(res,rej){
+      var t=d.transaction('notes','readwrite');
+      t.oncomplete=function(){res(true);};
+      t.onerror=function(e){rej(e.target.error);};
+      t.objectStore('notes').delete(id);
+    });
+  }
+
+  // clearAll: transaction oncomplete bekle
+  async function clearAll(){
+    var d=await open();
+    return new Promise(function(res,rej){
+      var t=d.transaction('notes','readwrite');
+      t.oncomplete=function(){res(true);};
+      t.onerror=function(e){rej(e.target.error);};
+      t.objectStore('notes').clear();
+    });
+  }
   function generateId(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
   return{saveNote,getAllNotes,deleteNote,clearAll,generateId};
 })();

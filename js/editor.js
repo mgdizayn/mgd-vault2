@@ -27,22 +27,31 @@ var Editor = (function(){
   async function save(silent){
     var title=document.getElementById('editorTitle').value.trim();
     var body =document.getElementById('editorBody').value.trim();
-    if(!title&&!body){ if(!silent) toast('Not boş'); return; }
-    if(!note) return;
+    if(!title&&!body){ if(!silent) toast('Not boş'); return false; }
+    if(!note) return false;
     try{
-      note.encTitle  = await VaultCrypto.encryptText(title||'(Başlıksız)');
-      note.encBody   = await VaultCrypto.encryptText(body||'');
+      // Önce şifrele
+      var encTitle = await VaultCrypto.encryptText(title||'(Başlıksız)');
+      var encBody  = await VaultCrypto.encryptText(body||'');
+      // Sonra kaydet
+      note.encTitle  = encTitle;
+      note.encBody   = encBody;
       note.updatedAt = new Date().toISOString();
       await VaultStorage.saveNote(note);
+      // Kayıt tamamlandı
       dirty=false;
       setStatus('Kaydedildi');
       showSaved();
       if(!silent) toast('Kaydedildi ✓');
-      // Refresh note list in background
+      // Listeyi arka planda yenile
       var srch=document.getElementById('listSearch');
       if(typeof loadList==='function') loadList(srch?srch.value:'');
       if(VaultGitHub.isConfigured()) syncGH();
-    }catch(e){ toast('Hata: '+e.message); }
+      return true;
+    }catch(e){
+      toast('Kayıt hatası: '+e.message);
+      return false;
+    }
   }
 
   async function syncGH(){
@@ -143,8 +152,12 @@ var Editor = (function(){
     });
 
     document.getElementById('btnEditorSave').addEventListener('click',function(){ save(false); });
-    document.getElementById('btnEditorBack').addEventListener('click',function(){
-      if(dirty){ save(true); }
+    document.getElementById('btnEditorBack').addEventListener('click',async function(){
+      if(dirty){
+        var ok=await save(true);
+        // Kısa bekleme — IndexedDB flush için
+        await new Promise(function(r){setTimeout(r,80);});
+      }
       Router.back();
     });
   }
