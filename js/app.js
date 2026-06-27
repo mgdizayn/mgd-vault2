@@ -128,8 +128,11 @@ function buildSetupForm(){
     '⚠️ Bu parola <strong>kurtarılamaz</strong>. Kaybedersen notlarına erişemezsin.</div>'+
     '<input class="input" type="password" id="fPass"  placeholder="Master parola (min. 6 karakter)" autocomplete="new-password" style="margin-top:4px;">'+
     '<input class="input" type="password" id="fPass2" placeholder="Parolayı onayla"                 autocomplete="new-password" style="margin-top:8px;">'+
-    '<button class="btn btn-dark" id="btnSetup" style="width:100%;height:48px;margin-top:10px;border-radius:14px;font-size:0.9rem;">Vault\'u Kur &amp; Parmak İzi Ekle</button>';
+    '<button class="btn btn-dark" id="btnSetup" style="width:100%;height:48px;margin-top:10px;border-radius:14px;font-size:0.9rem;">Vault\'u Kur &amp; Parmak İzi Ekle</button>'+
+    '<div id="lnkRestore" style="text-align:center;font-size:0.74rem;color:var(--t-mid);margin-top:14px;cursor:pointer;">Daha önce GitHub\'a yedeklediysen → <span style="color:var(--blue);font-weight:600;">Geri Yükle</span></div>';
   document.getElementById('lockFooter').style.display='none';
+
+  document.getElementById('lnkRestore').addEventListener('click',buildRestoreForm);
 
   document.getElementById('btnSetup').addEventListener('click',async function(){
     var p1=document.getElementById('fPass').value;
@@ -143,6 +146,68 @@ function buildSetupForm(){
       try{await VaultAuth.register();toast('Parmak izi kaydedildi ✓');}
       catch(e){toast('Biyometrik atlandı');}
     }
+    initDial();
+  });
+}
+
+// Chrome verisi temizlendiğinde mgd_salt/mgd_ght/mgd_ghr de silindiği için
+// normal "ilk kurulum" akışı yeni bir şifreleme anahtarı üretir — bu durumda
+// GitHub'daki ESKİ yedek artık çözülemez hale gelir (farklı anahtar).
+// Bu ekran, kullanıcının GitHub token+repo+ESKİ parolasını girerek mevcut
+// yedeği indirip doğru anahtarla yeniden "kurmasını" sağlar.
+function buildRestoreForm(){
+  document.getElementById('lockSub').textContent='GitHub\'dan geri yükle';
+  document.getElementById('bioRingWrap').style.display='none';
+  document.getElementById('lockDivider').style.display='none';
+  document.getElementById('lockForm').innerHTML=
+    '<div style="background:var(--blue-soft);border:1px solid rgba(96,165,250,0.25);border-radius:10px;padding:11px 14px;font-size:0.72rem;color:var(--blue);line-height:1.6;margin-bottom:4px;">'+
+    'Notlarının yedeklendiği GitHub repo bilgilerini ve <strong>eski master parolanı</strong> gir. Parola eşleşmezse geri yükleme başarısız olur.</div>'+
+    '<input class="input" id="rToken" type="password" placeholder="GitHub Personal Access Token" style="margin-top:4px;">'+
+    '<input class="input" id="rRepo"  placeholder="kullanici/repo-adi" style="margin-top:8px;">'+
+    '<input class="input" id="rPass"  type="password" placeholder="Eski master parola" style="margin-top:8px;">'+
+    '<button class="btn btn-dark" id="btnRestore" style="width:100%;height:48px;margin-top:10px;border-radius:14px;font-size:0.9rem;">Geri Yükle</button>'+
+    '<div id="lnkBackToSetup" style="text-align:center;font-size:0.74rem;color:var(--t-mid);margin-top:14px;cursor:pointer;">‹ Yeni vault kurmaya geri dön</div>';
+  document.getElementById('lockFooter').style.display='none';
+
+  document.getElementById('lnkBackToSetup').addEventListener('click',buildSetupForm);
+
+  document.getElementById('btnRestore').addEventListener('click',async function(){
+    var token=document.getElementById('rToken').value.trim();
+    var repo =document.getElementById('rRepo').value.trim();
+    var pass =document.getElementById('rPass').value;
+    if(!token||!repo){toast('Token ve repo gerekli');return;}
+    if(!pass){toast('Eski parolanı gir');return;}
+    this.textContent='Bağlanıyor…';this.disabled=true;
+
+    var connOk=await VaultGitHub.configure(token,repo);
+    if(!connOk){
+      toast('GitHub bağlantısı başarısız — token/repo kontrol et');
+      this.textContent='Geri Yükle';this.disabled=false;
+      return;
+    }
+
+    var blob=await VaultGitHub.pullMeta();
+    if(!blob){
+      toast('Bu repoda yedek bulunamadı (vault/meta.json yok)');
+      this.textContent='Geri Yükle';this.disabled=false;
+      return;
+    }
+
+    this.textContent='Çözülüyor…';
+    var result=await VaultCrypto.restoreFromBackup(pass,blob);
+    if(!result.ok){
+      toast(result.reason==='no_meta'
+        ? 'Bu yedek eski formatta — meta.json bulunamadı'
+        : 'Parola yanlış veya yedek bozuk');
+      this.textContent='Geri Yükle';this.disabled=false;
+      return;
+    }
+
+    sessionStorage.setItem('mgd_sk',pass);
+    if(VaultAuth.supported()){
+      try{await VaultAuth.register();}catch(e){}
+    }
+    toast('Vault geri yüklendi ✓ — notlar senkronize ediliyor…');
     initDial();
   });
 }
@@ -225,6 +290,19 @@ async function doBio(){
 var _dialInited=false;
 function initDial(){
   Router.go('pgDial');
+
+  // Kasa her açıldığında (kurulum/parola/biyometrik fark etmez) GitHub
+  // yapılandırılmışsa arka planda otomatik iki yönlü sync tetikle.
+  // Sonucunu beklemiyoruz — kullanıcı dial ekranını hemen görsün,
+  // sync bittiğinde liste zaten bir sonraki loadList() çağrısında güncel olur.
+  if(VaultGitHub.isConfigured()){
+    VaultSync.run().then(function(r){
+      if(r&&r.ok&&(r.pulled>0)){
+        toast('GitHub\'dan '+r.pulled+' not güncellendi ✓');
+        if(typeof loadList==='function') loadList();
+      }
+    });
+  }
 
   // Date/greeting
   var h=new Date().getHours();
@@ -365,9 +443,19 @@ async function openReader(note){
 
 // ── Settings ──────────────────────────────────────────────────────
 function initSettings(){
+  function fmtLastSync(){
+    var iso=VaultGitHub.getLastSync();
+    var el=document.getElementById('ghLastSync');
+    if(!el) return;
+    if(!iso){ el.textContent='Henüz senkronize edilmedi'; return; }
+    var d=new Date(iso);
+    el.textContent='Son senkron: '+d.toLocaleDateString('tr-TR')+' '+d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  }
   document.getElementById('sGithub').addEventListener('click',function(){
     var c=document.getElementById('ghConfig');
-    c.style.display=c.style.display==='none'?'flex':'none';
+    var show=c.style.display==='none';
+    c.style.display=show?'flex':'none';
+    if(show) fmtLastSync();
   });
   document.getElementById('btnGhConnect').addEventListener('click',async function(){
     var t=document.getElementById('ghToken').value.trim();
@@ -380,6 +468,36 @@ function initSettings(){
     document.getElementById('ghDesc').textContent=ok?'Bağlı: '+r:'Bağlı değil';
     toast(ok?'GitHub bağlandı ✓':'Bağlantı başarısız');
     this.textContent='Bağlan & Test Et';
+    // Bağlantı kurulduysa hemen ilk senkronu tetikle (mevcut yereldeki
+    // notlar GitHub'a, GitHub'daki varsa yerele aksın).
+    if(ok){
+      toast('İlk senkronizasyon yapılıyor…');
+      var res=await VaultSync.run();
+      if(res&&res.ok){
+        toast('Senkronizasyon tamamlandı ✓ ('+res.total+' not)');
+        fmtLastSync();
+        if(typeof loadList==='function') loadList();
+      }
+    }
+  });
+  document.getElementById('btnGhSyncNow').addEventListener('click',async function(){
+    if(!VaultGitHub.isConfigured()){toast('Önce GitHub\'a bağlan');return;}
+    if(VaultSync.isRunning()){toast('Senkronizasyon zaten çalışıyor…');return;}
+    this.textContent='Senkronize ediliyor…';this.disabled=true;
+    var res=await VaultSync.run();
+    this.textContent='Şimdi Senkronize Et';this.disabled=false;
+    if(!res){toast('Senkronizasyon başarısız');return;}
+    if(res.ok){
+      toast('Senkronizasyon tamamlandı ✓ ('+res.total+' not)');
+      fmtLastSync();
+      if(typeof loadList==='function') loadList();
+    } else if(res.reason==='decrypt_failed'){
+      toast('GitHub\'daki yedek farklı bir parolayla şifrelenmiş');
+    } else if(res.reason==='locked'){
+      toast('Kasa kilitli — önce aç');
+    } else {
+      toast('Senkronizasyon başarısız: '+(res.reason||'bilinmeyen hata'));
+    }
   });
   document.getElementById('sExport').addEventListener('click',async function(){
     var all=await VaultStorage.getAllNotes();
@@ -400,7 +518,7 @@ function initSettings(){
     if(!confirm('TÜM notlar ve ayarlar silinecek. Devam?'))return;
     if(!confirm('Son onay — geri alınamaz!'))return;
     await VaultStorage.clearAll();
-    ['mgd_salt','mgd_v','mgd_cid','mgd_ght','mgd_ghr'].forEach(function(k){localStorage.removeItem(k);});
+    ['mgd_salt','mgd_v','mgd_cid','mgd_ght','mgd_ghr','mgd_gh_lastsync'].forEach(function(k){localStorage.removeItem(k);});
     VaultCrypto.lock();sessionStorage.clear();
     toast('Sıfırlandı');setTimeout(function(){location.reload();},1200);
   });

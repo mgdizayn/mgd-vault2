@@ -46,7 +46,9 @@ var Editor = (function(){
       // Listeyi arka planda yenile
       var srch=document.getElementById('listSearch');
       if(typeof loadList==='function') loadList(srch?srch.value:'');
-      if(VaultGitHub.isConfigured()) syncGH();
+      // GitHub yapılandırılmışsa arka planda iki yönlü sync tetikle
+      // (sonucu beklemeden — kullanıcı kaydı zaten görüyor, sync arka planda).
+      if(VaultGitHub.isConfigured()) VaultSync.run();
       return true;
     }catch(e){
       toast('Kayıt hatası: '+e.message);
@@ -55,11 +57,9 @@ var Editor = (function(){
   }
 
   async function syncGH(){
-    try{
-      var all=await VaultStorage.getAllNotes();
-      var enc=await VaultCrypto.encryptText(JSON.stringify(all));
-      await VaultGitHub.pushNotes(enc);
-    }catch(e){}
+    // Geriye dönük uyumluluk: artık VaultSync.run() kullanılıyor.
+    // Bu fonksiyon dışarıdan çağrılan başka bir yer varsa diye köprü olarak tutulur.
+    return VaultSync.run();
   }
 
   function openNew(category){
@@ -102,6 +102,8 @@ var Editor = (function(){
     note=null;
     Router.back();
     toast('Not silindi');
+    // Silme işlemi de bir "güncelleme" sayılır (tombstone) — GitHub'a yansıt.
+    if(VaultGitHub.isConfigured()) VaultSync.run();
   }
 
   function init(){
